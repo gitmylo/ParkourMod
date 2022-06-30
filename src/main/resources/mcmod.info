@@ -1,0 +1,18 @@
+[
+  {
+    "modid": "parkour",
+    "name": "Parkour",
+    "description": "Adds parkour movement",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "updateUrl": "",
+    "authorList": [
+      "Mylo"
+    ],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]
