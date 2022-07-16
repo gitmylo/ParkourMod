@@ -14,7 +14,7 @@ public class MathUtils {
      * @return The angle in degrees
      */
     public static double getDirectionOfMovement(double z, double x) {
-        return Math.atan2(z, x) * 180 / Math.PI;
+        return Math.atan2(z, x) / Math.PI * 180;
     }
 
     /**
@@ -77,21 +77,21 @@ public class MathUtils {
             Vec3d direction = new Vec3d(0, 0, 0);
             switch (i) {
                 case 0:
-                    direction = new Vec3d(0, 0, 1);
+                    direction = new Vec3d(0, 0, .1);
                     break;
                 case 1:
-                    direction = new Vec3d(0, 0, -1);
+                    direction = new Vec3d(0, 0, -.1);
                     break;
                 case 2:
-                    direction = new Vec3d(1, 0, 0);
+                    direction = new Vec3d(.1, 0, 0);
                     break;
                 case 3:
-                    direction = new Vec3d(-1, 0, 0);
+                    direction = new Vec3d(-.1, 0, 0);
                     break;
             }
             //Check if the player is colliding with a wall
             if (!mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(direction)).isEmpty()) {
-                out.add(direction);
+                out.add(direction.normalize());
             }
         }
         return out;
