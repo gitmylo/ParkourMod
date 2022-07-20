@@ -96,4 +96,37 @@ public class MathUtils {
         }
         return out;
     }
+
+    public static int heightOfJumpInFront(int maxHeight) {
+        Minecraft mc = Minecraft.getMinecraft();
+        double x = mc.player.posX;
+        double y = mc.player.posY;
+        double z = mc.player.posZ;
+        int heightDiff = 0;
+        double[] forwards = directionToPosDiff(mc.player.rotationYaw + 90);
+        double directionX = forwards[0];
+        double directionZ = forwards[1];
+        if (Math.abs(directionX) > Math.abs(directionZ)) {
+            directionZ = 0;
+        }
+        else {
+            directionX = 0;
+        }
+        boolean finished = false;
+        for (int i = 0; i < maxHeight; i++) {
+            Vec3d direction = new Vec3d(forwards[0] * 0.1, i, forwards[1] * 0.1);
+            if (mc.world.getCollisionBoxes(mc.player, mc.player.getEntityBoundingBox().offset(direction)).isEmpty()) {
+                finished = true;
+                break;
+            } else {
+                heightDiff++;
+            }
+        }
+        if (!finished) return 0;
+        return heightDiff;
+    }
+
+    public static float HeightToMotion(int height) {
+        return (float) Math.sqrt(height) / 6;
+    }
 }

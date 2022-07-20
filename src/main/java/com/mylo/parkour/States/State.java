@@ -24,7 +24,7 @@ import java.util.ArrayList;
 
 public class State {
     public enum baseState {
-        Walking, Running, Jumping, Falling, Idle, Climbing, Swimming, Sliding, Dead, WallRunning
+        Walking, Running, Jumping, Falling, Idle, Climbing, Swimming, Sliding, Dead, WallRunning, WallClimbing
     }
 
     public baseState currentState = baseState.Idle;
@@ -48,6 +48,23 @@ public class State {
         double x = MathUtils.getXDir();
         double z = MathUtils.getZDir();
         double lastToCurrentSpeed = Math.sqrt(Math.pow(mc.player.posX - lastX, 2) + Math.pow(mc.player.posZ - lastZ, 2));
+
+        if (currentState == baseState.WallClimbing) {
+            int jumpInFront = MathUtils.heightOfJumpInFront(2);
+            if (jumpInFront == 0) currentState = baseState.Falling;
+            else
+            mc.player.motionY = MathUtils.HeightToMotion(jumpInFront);
+
+            ArrayList<Vec3d> collidingWalls = MathUtils.WhichWallAmICollidingWith();
+            float xVel = 0, zVel = 0;
+            for (Vec3d wall : collidingWalls) {
+                xVel += wall.x / 10;
+                zVel += wall.z / 10;
+            }
+            mc.player.motionX = xVel;
+            mc.player.motionZ = zVel;
+        }
+
         switch (currentState) {
             case Walking:
                 break;
@@ -193,6 +210,10 @@ public class State {
 
         float speed = (float) Math.sqrt(mc.player.motionX * mc.player.motionX + mc.player.motionZ * mc.player.motionZ);
 
+        int jumpInFront = MathUtils.heightOfJumpInFront(2);
+
+        if (isWallClimbing() && mc.player.collidedHorizontally) return;
+
         if (mc.player.isDead) {
             setState(baseState.Dead);
         } else if ((isRunning() || (speed > 0.18 && (isFalling() || isWalking()))) && mc.player.isSneaking() && mc.player.onGround) {
@@ -207,6 +228,8 @@ public class State {
             setState(baseState.WallRunning);
         } else if (mc.player.motionY < 0 && !mc.player.onGround && !isSliding()) {
             setState(baseState.Falling);
+        } else if (mc.player.movementInput.jump && mc.player.collidedHorizontally && jumpInFront != 0) {
+            setState(baseState.WallClimbing);
         } else if (mc.player.motionY > 0 && !mc.player.onGround) {
             setState(baseState.Jumping);
         } else if (mc.player.isSprinting() && !isSliding()) {
@@ -289,6 +312,10 @@ public class State {
 
     public boolean isWallRunning() {
         return currentState == baseState.WallRunning;
+    }
+
+    public boolean isWallClimbing() {
+        return currentState == baseState.WallClimbing;
     }
 
 
