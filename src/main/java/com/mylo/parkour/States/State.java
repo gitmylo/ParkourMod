@@ -1,6 +1,7 @@
 package com.mylo.parkour.States;
 
 import com.mylo.parkour.MathUtils;
+import com.mylo.parkour.config.Configuration;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -50,7 +51,7 @@ public class State {
         double lastToCurrentSpeed = Math.sqrt(Math.pow(mc.player.posX - lastX, 2) + Math.pow(mc.player.posZ - lastZ, 2));
 
         if (currentState == baseState.WallClimbing) {
-            int jumpInFront = MathUtils.heightOfJumpInFront(2);
+            int jumpInFront = MathUtils.heightOfJumpInFront(Configuration.climbHeight);
             if (jumpInFront == 0) currentState = baseState.Falling;
             else
             mc.player.motionY = MathUtils.HeightToMotion(jumpInFront);
@@ -65,6 +66,8 @@ public class State {
             mc.player.motionZ = zVel;
         }
 
+        double airMovementAddMul = Configuration.airMovement.airMovementAddMul;
+
         switch (currentState) {
             case Walking:
                 break;
@@ -72,21 +75,21 @@ public class State {
                 break;
             case Jumping:
                 if (!mc.player.capabilities.isFlying)
-                    mc.player.motionY += Math.abs(mc.player.motionY - 0.42) * 0.1;
-                mc.player.motionX *= 1.02f;
-                mc.player.motionZ *= 1.02f;
-                mc.player.fallDistance = -10 + 3;
+                    mc.player.motionY += Math.abs(mc.player.motionY - 0.42) * Configuration.airMovement.airMovementSlowFallUp;
+                mc.player.motionX *= 1 + airMovementAddMul;
+                mc.player.motionZ *= 1 + airMovementAddMul;
                 break;
             case Falling:
                 if (!mc.player.capabilities.isFlying)
-                    mc.player.motionY += Math.abs(mc.player.motionY - 0.42) * 0.05;
-                mc.player.motionX *= 1.02f;
-                mc.player.motionZ *= 1.02f;
+                    mc.player.motionY += Math.abs(mc.player.motionY - 0.42) * Configuration.airMovement.airMovementSlowFallDown;
+                mc.player.motionX *= 1 + airMovementAddMul;
+                mc.player.motionZ *= 1 + airMovementAddMul;
                 if (!jumpLastTick && mc.player.movementInput.jump && airJumpsLeft > 0) {
                     airJumpsLeft--;
-                    mc.player.motionX += MathUtils.getXDir() * 0.2F;
-                    mc.player.motionZ += MathUtils.getZDir() * 0.2F;
-                    mc.player.motionY = 0.5;
+                    double forwardsForce = Configuration.doubleJump.doubleJumpForwardsForce;
+                    mc.player.motionX += MathUtils.getXDir() * forwardsForce;
+                    mc.player.motionZ += MathUtils.getZDir() * forwardsForce;
+                    mc.player.motionY = Configuration.doubleJump.doubleJumpUpwardForce;
                 }
                 break;
             case Idle:
@@ -108,6 +111,8 @@ public class State {
             case Dead:
                 break;
             case WallRunning:
+                double wallrunSpeed = Configuration.wallRunning.wallRunningSpeed;
+
                 mc.player.motionY = 0;
                 mc.player.onGround = true;
                 for (Vec3d vec : MathUtils.WhichWallAmICollidingWith()) {
@@ -118,9 +123,9 @@ public class State {
                     double xDir = Math.abs(xDiff) > Math.abs(zDiff) ? xDiff : 0;
                     double zDir = Math.abs(xDiff) > Math.abs(zDiff) ? 0 : zDiff;
                     if (xDir != 0)
-                        mc.player.motionX = xDir * 0.1;
+                        mc.player.motionX = xDir * wallrunSpeed;
                     if (zDir != 0)
-                        mc.player.motionZ = zDir * 0.1;
+                        mc.player.motionZ = zDir * wallrunSpeed;
                 }
                 if (mc.player.movementInput.jump) {
                     for (Vec3d vec : MathUtils.WhichWallAmICollidingWith()) {
@@ -130,15 +135,16 @@ public class State {
                         double zDiff = vec.z;
                         double xDir = Math.abs(xDiff) > Math.abs(zDiff) ? xDiff : 0;
                         double zDir = Math.abs(xDiff) > Math.abs(zDiff) ? 0 : zDiff;
+                        double jumpForce = Configuration.wallRunning.wallRunningJumpForceHor;
                         if (xDir != 0)
-                            mc.player.motionX = -xDir * 0.4;
+                            mc.player.motionX = -xDir * jumpForce;
                         if (zDir != 0)
-                            mc.player.motionZ = -zDir * 0.4;
-                        mc.player.motionY = 0.45;
+                            mc.player.motionZ = -zDir * jumpForce;
+                        mc.player.motionY = Configuration.wallRunning.wallRunningJumpForceVert;
                     }
                 }
                 mc.player.setSprinting(true);
-                if (!mc.player.collidedHorizontally || Math.abs(Math.sqrt(mc.player.motionX * mc.player.motionX + mc.player.motionZ * mc.player.motionZ)) < 0.3f || lastToCurrentSpeed < 0.1) {
+                if (!mc.player.collidedHorizontally || lastToCurrentSpeed < Configuration.wallRunning.wallRunningMinimumSpeed) {
                     setState(baseState.Falling);
                 }
                 mc.player.addVelocity(x * 0.1f, 0, z * 0.1f);
@@ -179,7 +185,7 @@ public class State {
         lastPow = currentPow;
 
         if (isWalking() || isRunning() || isWallRunning()) {
-            airJumpsLeft = 1;
+            airJumpsLeft = Configuration.doubleJump.doubleJumps;
         }
         jumpLastTick = mc.player.movementInput.jump;
         lastX = mc.player.posX;
@@ -210,13 +216,13 @@ public class State {
 
         float speed = (float) Math.sqrt(mc.player.motionX * mc.player.motionX + mc.player.motionZ * mc.player.motionZ);
 
-        int jumpInFront = MathUtils.heightOfJumpInFront(2);
+        int jumpInFront = MathUtils.heightOfJumpInFront(Configuration.climbHeight);
 
         if (isWallClimbing() && mc.player.collidedHorizontally) return;
 
         if (mc.player.isDead) {
             setState(baseState.Dead);
-        } else if ((isRunning() || (speed > 0.18 && (isFalling() || isWalking()))) && mc.player.isSneaking() && mc.player.onGround) {
+        } else if ((isRunning() || (speed > 0.18 && (isFalling() || isWalking()))) && mc.player.isSneaking() && mc.player.onGround && Configuration.sliding.enableSliding) {
             setState(baseState.Sliding);
         } else if (mc.player.isInWater()) {
             setState(baseState.Swimming);
@@ -224,7 +230,7 @@ public class State {
             setState(baseState.Climbing);
         } else if (mc.player.posX == 0 && mc.player.posY == 0 && mc.player.posZ == 0) {
             setState(baseState.Idle);
-        } else if (mc.player.collidedHorizontally && !mc.player.onGround && (isFalling() || isWallRunning()) && lastToCurrentSpeed >= 0.1) {
+        } else if (mc.player.collidedHorizontally && !mc.player.onGround && (isFalling() || isWallRunning()) && lastToCurrentSpeed >= 0.1 && Configuration.wallRunning.enableWallRunning) {
             setState(baseState.WallRunning);
         } else if (mc.player.motionY < 0 && !mc.player.onGround && !isSliding()) {
             setState(baseState.Falling);
@@ -262,12 +268,18 @@ public class State {
             case Swimming:
                 break;
             case Sliding:
-                mc.player.motionX *= 2;
-                mc.player.motionX += MathUtils.getXDir() * 0.4;
-                mc.player.motionX = Math.min(mc.player.motionX, 1);
-                mc.player.motionZ *= 2;
-                mc.player.motionZ += MathUtils.getZDir() * 0.4;
-                mc.player.motionZ = Math.min(mc.player.motionZ, 1);
+                double baseMultiplier = Configuration.sliding.baseMultiplier;
+                double dirMultiplier = Configuration.sliding.directionalMultiplier;
+                double newX = mc.player.motionX;
+                double newZ = mc.player.motionZ;
+                newX *= baseMultiplier;
+                newX += MathUtils.getXDir() * dirMultiplier;
+                newZ *= baseMultiplier;
+                newZ += MathUtils.getZDir() * dirMultiplier;
+                if (Math.sqrt(newX * newX + newZ * newZ) < Configuration.sliding.maxBoostSpeed) {
+                    mc.player.motionX = newX;
+                    mc.player.motionZ = newZ;
+                }
                 break;
             case Dead:
                 break;

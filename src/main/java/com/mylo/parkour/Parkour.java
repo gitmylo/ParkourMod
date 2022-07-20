@@ -20,7 +20,7 @@ public class Parkour {
 
     public static final String MOD_ID = "parkour";
     public static final String MOD_NAME = "Parkour";
-    public static final String VERSION = "1.7";
+    public static final String VERSION = "1.8";
 
     /**
      * This is the instance of your mod as created by Forge. It will never be null.
